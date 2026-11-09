@@ -95,7 +95,7 @@ loader.load("stand3x3.glb", (gltf) => {
           material.map = videoTexture;
           material.color.set(0xffffff);
           material.needsUpdate = true;
-          pantallaEncontrada = true;
+        
         }
       });
     }
@@ -105,7 +105,6 @@ loader.load("stand3x3.glb", (gltf) => {
     console.log("No se pudo iniciar el video:", error);
   });
 
-  console.log("¿Se encontró la pantalla?", pantallaEncontrada);
 
   const box = new THREE.Box3().setFromObject(stand);
   const size = box.getSize(new THREE.Vector3());
