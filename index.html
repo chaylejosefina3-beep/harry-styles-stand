@@ -92,6 +92,7 @@ loader.load("stand3x3.glb", (gltf) => {
 
       materiales.forEach((material) => {
         if (material.name === "Material.010") {
+          console.log("ENCONTRÉ LA PANTALLA");
           material.map = videoTexture;
           material.color.set(0xffffff);
           material.needsUpdate = true;
