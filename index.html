@@ -80,6 +80,32 @@ const loader = new GLTFLoader();
 loader.load("stand3x3.glb", (gltf) => {
   stand = gltf.scene;
   scene.add(stand);
+  const video = document.getElementById("videoStand");
+  const videoTexture = new THREE.VideoTexture(video);
+  videoTexture.colorSpace = THREE.SRGBColorSpace;
+
+  stand.traverse((obj) => {
+    if (obj.isMesh && obj.name === "Cube.002") {
+      const materiales = Array.isArray(obj.material)
+        ? obj.material
+        : [obj.material];
+
+      materiales.forEach((material) => {
+        if (material.name === "Material.010") {
+          material.map = videoTexture;
+          material.color.set(0xffffff);
+          material.needsUpdate = true;
+          pantallaEncontrada = true;
+        }
+      });
+    }
+  });
+
+  video.play().catch((error) => {
+    console.log("No se pudo iniciar el video:", error);
+  });
+
+  console.log("¿Se encontró la pantalla?", pantallaEncontrada);
 
   const box = new THREE.Box3().setFromObject(stand);
   const size = box.getSize(new THREE.Vector3());
