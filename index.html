@@ -85,7 +85,13 @@ loader.load("stand3x3.glb", (gltf) => {
   videoTexture.colorSpace = THREE.SRGBColorSpace;
 
   stand.traverse((obj) => {
-    if (obj.isMesh) console.log("OBJETO:", obj.name);
+    if (obj.isMesh) {
+  console.log("OBJETO:", obj.name, "MATERIALES:",
+    Array.isArray(obj.material)
+      ? obj.material.map(m => m.name)
+      : obj.material.name
+  );
+}
     if (obj.isMesh && obj.name === "Cube.002") {
       const materiales = Array.isArray(obj.material)
         ? obj.material
