@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Harry Styles - Stand 3D</title>
+<style>
+  body { margin: 0; overflow: hidden; font-family: Arial; background: #f8eaf0; }
+  #menu {
+    position: fixed; top: 15px; left: 15px; z-index: 5;
+    display: flex; gap: 10px;
+  }
+  button {
+    border: 0; border-radius: 20px; padding: 12px 18px;
+    background: #e9a9c2; color: #38222d; cursor: pointer;
+    font-size: 14px;
+  }
+  #info {
+    position: fixed; bottom: 15px; left: 15px; z-index: 5;
+    background: white; padding: 12px; border-radius: 12px;
+    font-size: 13px;
+  }
+  #error { position:fixed; top:70px; left:15px; color:#a00; z-index:5; }
+</style>
+</head>
+<body>
+
+<div id="menu">
+  <button id="rotate">Girar / Explorar</button>
+  <button id="walk">Caminar</button>
+</div>
+<div id="info">Para caminar: WASD para moverte · Ratón para mirar · ESC para salir</div>
+<div id="error"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf8eaf0);
+
+const camera = new THREE.PerspectiveCamera(
+  60, window.innerWidth / window.innerHeight, 0.1, 10000
+);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x777777, 2));
+
+const light = new THREE.DirectionalLight(0xffffff, 2);
+light.position.set(5, 10, 7);
+scene.add(light);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+let stand;
+let center = new THREE.Vector3();
+let walkMode = false;
+let yaw = 0;
+let pitch = 0;
+const keys = {};
+
+const loader = new GLTFLoader();
+
+loader.load("stand3x3.glb", (gltf) => {
+  stand = gltf.scene;
+  scene.add(stand);
+
+  const box = new THREE.Box3().setFromObject(stand);
+  const size = box.getSize(new THREE.Vector3());
+  center = box.getCenter(new THREE.Vector3());
+
+  const maxSize = Math.max(size.x, size.y, size.z);
+  const distance = maxSize * 1.5;
+
+  camera.position.set(
+    center.x + distance,
+    center.y + distance * 0.6,
+    center.z + distance
+  );
+  controls.target.copy(center);
+  controls.update();
+
+}, undefined, (error) => {
+  document.getElementById("error").textContent =
+    "No se pudo cargar stand3x3.glb. Revisá el nombre del archivo.";
+  console.error(error);
+});
+
+document.getElementById("rotate").onclick = () => {
+  if (walkMode) exitWalk();
+  controls.enabled = true;
+};
+
+document.getElementById("walk").onclick = () => {
+  if (!stand) {
+    document.getElementById("error").textContent = "Esperá a que cargue el stand.";
+    return;
+  }
+  walkMode = true;
+  controls.enabled = false;
+  const box = new THREE.Box3().setFromObject(stand);
+  const size = box.getSize(new THREE.Vector3());
+  camera.position.set(center.x, box.min.y + size.y * 0.45, center.z);
+  yaw = 0;
+  pitch = 0;
+  renderer.domElement.requestPointerLock();
+};
+
+function exitWalk() {
+  walkMode = false;
+  controls.enabled = true;
+  document.exitPointerLock?.();
+}
+
+document.addEventListener("pointerlockchange", () => {
+  if (document.pointerLockElement !== renderer.domElement) {
+    walkMode = false;
+    controls.enabled = true;
+  }
+});
+
+document.addEventListener("mousemove", (event) => {
+  if (!walkMode || document.pointerLockElement !== renderer.domElement) return;
+  yaw -= event.movementX * 0.002;
+  pitch -= event.movementY * 0.002;
+  pitch = Math.max(-1.4, Math.min(1.4, pitch));
+});
+
+document.addEventListener("keydown", e => keys[e.code] = true);
+document.addEventListener("keyup", e => keys[e.code] = false);
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  if (walkMode && document.pointerLockElement === renderer.domElement) {
+    const speed = 0.08;
+    const forward = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+    const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+
+    if (keys.KeyW || keys.ArrowUp) camera.position.addScaledVector(forward, speed);
+    if (keys.KeyS || keys.ArrowDown) camera.position.addScaledVector(forward, -speed);
+    if (keys.KeyA || keys.ArrowLeft) camera.position.addScaledVector(right, -speed);
+    if (keys.KeyD || keys.ArrowRight) camera.position.addScaledVector(right, speed);
+
+    camera.rotation.order = "YXZ";
+    camera.rotation.y = yaw;
+    camera.rotation.x = pitch;
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
