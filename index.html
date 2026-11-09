@@ -83,7 +83,7 @@ loader.load("stand3x3.glb", (gltf) => {
   const video = document.getElementById("videoStand");
   const videoTexture = new THREE.VideoTexture(video);
   videoTexture.colorSpace = THREE.SRGBColorSpace;
-
+videoTexture.flipY = false;
   stand.traverse((obj) => {
     if (obj.isMesh) {
   console.log("OBJETO:", obj.name, "MATERIALES:",
